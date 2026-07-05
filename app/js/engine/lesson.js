@@ -1,9 +1,10 @@
 import { renderQuizTask } from "./tasks.js";
 import { mountBuilder } from "./builder.js";
 import { XP_BUILD, XP_QUIZ } from "../state.js";
+import { TermView } from "../python/terminal.js";
 
 export function renderLesson(view, ctx, teilId, lektionId) {
-  const { registry, store, navigate } = ctx;
+  const { registry, store, navigate, runtime } = ctx;
   const teil = registry.find((t) => t.id === teilId);
   const lektion = teil?.lektionen.find((l) => l.id === lektionId);
   if (!teil || !lektion) {
@@ -16,14 +17,24 @@ export function renderLesson(view, ctx, teilId, lektionId) {
   let aufgabenIndex = 0;
   const results = []; // 'correct' | 'wrong' | 'solved-no-xp' per aufgabe index
   let activeBuilder = null;
+  let activeSlideTerm = null;
+  let slideStatusUnsub = null;
 
   function disposeBuilder() {
     activeBuilder?.dispose?.();
     activeBuilder = null;
   }
 
+  function disposeSlideTerm() {
+    slideStatusUnsub?.();
+    slideStatusUnsub = null;
+    activeSlideTerm?.dispose?.();
+    activeSlideTerm = null;
+  }
+
   function renderShell(innerHtml) {
     disposeBuilder();
+    disposeSlideTerm();
     view.innerHTML = `
       <div class="view-narrow${phase === "build-task" ? " wide" : ""}">
         <div class="crumbs">
@@ -49,7 +60,21 @@ export function renderLesson(view, ctx, teilId, lektionId) {
     }</div>
         <h2>${slide.h}</h2>
         <p>${slide.p}</p>
-        ${slide.code ? `<div class="code-box">${escapeHtml(slide.code)}</div>` : ""}
+        ${
+          slide.code
+            ? `<div class="code-box">${escapeHtml(slide.code)}</div>
+        <div class="slide-run-box">
+          <div class="slide-run-toolbar">
+            <span class="label">Ausgabe</span>
+            <div style="display:flex; gap:8px;">
+              <button class="btn" id="btn-slide-reset">↺ Zurücksetzen</button>
+              <button class="btn btn-primary" id="btn-slide-run" style="--accent:${lektion.farbe}">▶ Code ausführen</button>
+            </div>
+          </div>
+          <div class="slide-term-wrap" id="slide-term-wrap"></div>
+        </div>`
+            : ""
+        }
       </div>
       <div class="slide-nav">
         <div class="slide-dots">${dots}</div>
@@ -74,6 +99,51 @@ export function renderLesson(view, ctx, teilId, lektionId) {
         renderTask();
       }
     });
+
+    if (slide.code) {
+      const termWrap = view.querySelector("#slide-term-wrap");
+      const runBtn = view.querySelector("#btn-slide-run");
+      const resetBtn = view.querySelector("#btn-slide-reset");
+      activeSlideTerm = new TermView(termWrap);
+      activeSlideTerm.writeInfo('Klicke „▶ Code ausführen“ — der Code oben läuft dann echt.');
+
+      let slideRunning = false;
+      const updateRunAvailability = (status) => {
+        if (slideRunning) return;
+        if (status === "ready") {
+          runBtn.disabled = false;
+          runBtn.textContent = "▶ Code ausführen";
+        } else if (status === "error") {
+          runBtn.disabled = true;
+          runBtn.textContent = "✘ Python-Fehler";
+        } else {
+          runBtn.disabled = true;
+          runBtn.textContent = "⏳ Python lädt …";
+        }
+      };
+      updateRunAvailability(runtime.ready ? "ready" : "loading");
+      slideStatusUnsub = runtime.onStatus(updateRunAvailability);
+
+      runBtn.addEventListener("click", async () => {
+        if (slideRunning || !runtime.ready) return;
+        slideRunning = true;
+        runBtn.disabled = true;
+        activeSlideTerm.clear();
+        const res = await runtime.runInteractive(slide.code, {
+          onStdout: (t) => activeSlideTerm.write(t + "\n"),
+          onStderr: (t) => activeSlideTerm.writeErr(t + "\n"),
+          onStdinRequest: async (id) => {
+            const line = await activeSlideTerm.waitForLine();
+            runtime.provideStdinLine(id, line);
+          },
+        });
+        if (!res.ok && res.error) activeSlideTerm.writeErr("\n" + res.error + "\n");
+        slideRunning = false;
+        updateRunAvailability(runtime.ready ? "ready" : "loading");
+      });
+
+      resetBtn.addEventListener("click", () => activeSlideTerm.clear());
+    }
   }
 
   function progressSegHtml() {
@@ -179,7 +249,10 @@ export function renderLesson(view, ctx, teilId, lektionId) {
   renderSlide();
 
   return {
-    dispose: disposeBuilder,
+    dispose() {
+      disposeBuilder();
+      disposeSlideTerm();
+    },
   };
 }
 
