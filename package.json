@@ -1,6 +1,6 @@
 {
   "name": "pyquest",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PY.QUEST Desktop — interaktive Python-Lern-App",
   "main": "electron/main.cjs",
   "private": true,
