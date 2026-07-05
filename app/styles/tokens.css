@@ -1,0 +1,72 @@
+/* PY.QUEST Design-Tokens — verbindlich, siehe MASTERPROMPT Abschnitt 3 */
+
+@font-face {
+  font-family: "Syne";
+  font-weight: 500;
+  src: url("../assets/fonts/syne-latin-500-normal.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Syne";
+  font-weight: 700;
+  src: url("../assets/fonts/syne-latin-700-normal.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Syne";
+  font-weight: 800;
+  src: url("../assets/fonts/syne-latin-800-normal.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-weight: 400;
+  src: url("../assets/fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-weight: 500;
+  src: url("../assets/fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-weight: 600;
+  src: url("../assets/fonts/ibm-plex-mono-latin-600-normal.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-weight: 700;
+  src: url("../assets/fonts/ibm-plex-mono-latin-700-normal.woff2") format("woff2");
+  font-display: swap;
+}
+
+:root {
+  --bg: #07090f;
+  --panel: #0d1220;
+  --panel2: #111830;
+  --line: #1c2740;
+  --text: #dbe4f5;
+  --dim: #7889a8;
+
+  --cyan: #4fd8eb;
+  --magenta: #ff5fa8;
+  --lime: #b8f04a;
+  --orange: #ffb347;
+  --violet: #a78bfa;
+  --red: #ff6b5e;
+  --teal: #34e0b0;
+  --gold: #ffd75e;
+  --blue: #6ea8ff;
+  --ok: #34e0b0;
+  --err: #ff6b5e;
+
+  --font-head: "Syne", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+
+  --radius: 11px;
+  --grid-size: 36px;
+  --grid-line: rgba(110, 168, 255, 0.045);
+}

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' data:; worker-src 'self' blob:;" />
+<title>PY.QUEST</title>
+<link rel="stylesheet" href="styles/tokens.css" />
+<link rel="stylesheet" href="vendor/xterm/xterm.css" />
+<link rel="stylesheet" href="styles/app.css" />
+</head>
+<body>
+<div id="app">
+  <header class="app-header">
+    <div class="logo" id="logo-home">PY<span class="dot">.</span>QUEST</div>
+    <div class="py-status" id="py-status">Python startet …</div>
+    <div class="header-spacer"></div>
+    <div class="xp-block" id="xp-block">
+      <div class="xp-level" id="xp-level">Lvl 1</div>
+      <div class="xp-bar"><div class="xp-bar-fill" id="xp-bar-fill" style="width:0%"></div></div>
+      <div class="xp-num" id="xp-num">0 XP</div>
+    </div>
+    <button class="header-btn" id="btn-playground">🐍 Playground</button>
+    <button class="header-btn" id="btn-settings">⚙ Einstellungen</button>
+  </header>
+
+  <main class="view" id="view">
+    <div class="empty-state">Lädt …</div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="playground-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>🐍 Playground — freier REPL</h3>
+      <button class="modal-close" id="playground-close">✕</button>
+    </div>
+    <div class="term-wrap" id="playground-term"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="settings-modal">
+  <div class="modal-box" style="height:auto;">
+    <div class="modal-header">
+      <h3>⚙ Einstellungen</h3>
+      <button class="modal-close" id="settings-close">✕</button>
+    </div>
+    <div style="padding:20px;">
+      <p style="color:var(--dim); font-size:13px;">Version <span id="app-version">–</span></p>
+
+      <div style="margin:16px 0; padding:14px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+        <button class="btn" id="btn-check-updates">Nach Updates suchen</button>
+        <button class="btn btn-primary" id="btn-install-update" style="display:none; margin-left:8px;">Automatisch installieren</button>
+        <button class="btn" id="btn-download-update" style="display:none; margin-left:8px;">Manuell herunterladen</button>
+        <p id="update-status" style="font-size:12.5px; color:var(--dim); margin:10px 0 0;"></p>
+      </div>
+
+      <p style="font-size:13px;">Fortschritt, XP und Lernpfad-Status vollständig zurücksetzen. Das kann nicht rückgängig gemacht werden.</p>
+      <button class="btn" id="btn-reset-progress" style="border-color:var(--err); color:var(--err);">Fortschritt zurücksetzen</button>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/xterm/xterm.js"></script>
+<script src="vendor/xterm/addon-fit.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

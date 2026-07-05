@@ -1,0 +1,61 @@
+{
+  "name": "pyquest",
+  "version": "1.0.0",
+  "description": "PY.QUEST Desktop — interaktive Python-Lern-App",
+  "main": "electron/main.cjs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "node scripts/copy-vendor.cjs",
+    "start": "electron .",
+    "verify-content": "node scripts/verify-content.mjs",
+    "dist:mac": "electron-builder --mac --universal && node scripts/write-checksums.cjs",
+    "release": "node scripts/release.cjs"
+  },
+  "author": "PY.QUEST",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.1.0",
+    "@fontsource/syne": "^5.1.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "pyodide": "^0.26.2"
+  },
+  "build": {
+    "appId": "com.pyquest.desktop",
+    "productName": "PY.QUEST",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "app/**/*",
+      "!app/content/*.test.js"
+    ],
+    "mac": {
+      "category": "public.app-category.education",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "icon": "assets/icon.icns"
+    }
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  }
+}
