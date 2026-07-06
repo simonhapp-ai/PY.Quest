@@ -71,12 +71,12 @@ export default {
         },
         {
           t: "build",
-          q: "Gib drei Zeilen aus: deinen Namen, dein Studienfach, dein Lernziel.",
+          q: "Gib drei Zeilen aus: deinen Namen, dein Studienfach und dein Lernziel — frei gewählt, Hauptsache nicht leer.",
           starter: "",
-          check: { stdout: ["Simon", "Informatik", "Python lernen"] },
+          check: { stdout: [{ any: true }, { any: true }, { any: true }] },
           hints: [
             "Nutze drei print()-Aufrufe untereinander.",
-            "Jede print()-Zeile erzeugt automatisch eine neue Ausgabezeile.",
+            "Jede print()-Zeile erzeugt automatisch eine neue Ausgabezeile — der Inhalt ist frei wählbar.",
             'print("Simon")\nprint("Informatik")\nprint("Python lernen")',
           ],
           loesung: 'print("Simon")\nprint("Informatik")\nprint("Python lernen")',
@@ -230,7 +230,7 @@ export default {
           t: "build",
           q: "Erstelle drei Variablen name (str), alter (int) und groesse (float) mit sinnvollen Werten und gib jede einzeln aus.",
           starter: "",
-          check: { stdout: ["Simon", "21", "1.85"] },
+          check: { stdout: [{ any: true }, { any: true }, { any: true }] },
           hints: [
             "Drei Zuweisungen, dann drei print()-Aufrufe.",
             "name bekommt Anführungszeichen, alter und groesse nicht.",

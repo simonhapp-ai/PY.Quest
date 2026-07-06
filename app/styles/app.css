@@ -156,6 +156,12 @@ a { color: var(--cyan); }
 .teil-card:hover { transform: translateY(-2px); }
 .teil-card.locked { opacity: 0.55; cursor: not-allowed; }
 .teil-card.locked:hover { transform: none; }
+.teil-card:focus-visible,
+.node-row:focus-visible,
+.werkstatt-card:focus-visible {
+  outline: 2px solid var(--accent, var(--cyan));
+  outline-offset: 2px;
+}
 .teil-card.soon { opacity: 0.35; cursor: default; }
 
 .teil-card .num {

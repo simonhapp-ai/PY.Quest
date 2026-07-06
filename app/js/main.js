@@ -108,6 +108,15 @@ document.getElementById("btn-playground").addEventListener("click", openPlaygrou
 document.getElementById("playground-close").addEventListener("click", () => {
   playgroundModal.classList.remove("show");
 });
+document.getElementById("playground-reset").addEventListener("click", async () => {
+  if (runtime.isBusy()) {
+    playgroundTerm?.writeInfo("Bitte zuerst die aktuelle Eingabe abschließen.");
+    return;
+  }
+  await runtime.resetRepl();
+  playgroundTerm?.clear();
+  playgroundTerm?.writeInfo("REPL zurückgesetzt — alle Variablen sind weg.");
+});
 
 // --- Settings ---
 const settingsModal = document.getElementById("settings-modal");

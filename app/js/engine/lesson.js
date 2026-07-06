@@ -1,7 +1,8 @@
 import { renderQuizTask } from "./tasks.js";
 import { mountBuilder } from "./builder.js";
-import { XP_BUILD, XP_QUIZ } from "../state.js";
+import { XP_BUILD } from "../state.js";
 import { TermView } from "../python/terminal.js";
+import { escapeHtml } from "../util.js";
 
 export function renderLesson(view, ctx, teilId, lektionId) {
   const { registry, store, navigate, runtime } = ctx;
@@ -16,6 +17,7 @@ export function renderLesson(view, ctx, teilId, lektionId) {
   let slideIndex = 0;
   let aufgabenIndex = 0;
   const results = []; // 'correct' | 'wrong' | 'solved-no-xp' per aufgabe index
+  let xpEarned = 0; // actual XP paid out this run, per store.recordAufgabe()/completeLektion()
   let activeBuilder = null;
   let activeSlideTerm = null;
   let slideStatusUnsub = null;
@@ -67,7 +69,7 @@ export function renderLesson(view, ctx, teilId, lektionId) {
           <div class="slide-run-toolbar">
             <span class="label">Ausgabe</span>
             <div style="display:flex; gap:8px;">
-              <button class="btn" id="btn-slide-reset">↺ Zurücksetzen</button>
+              <button class="btn" id="btn-slide-reset">↺ Terminal leeren</button>
               <button class="btn btn-primary" id="btn-slide-run" style="--accent:${lektion.farbe}">▶ Code ausführen</button>
             </div>
           </div>
@@ -173,23 +175,25 @@ export function renderLesson(view, ctx, teilId, lektionId) {
       renderQuizTask(cardEl, aufgabe, {
         onDone: (result) => {
           results[aufgabenIndex] = result;
-          store.recordAufgabe(teil.id, lektion.id, aufgabenIndex, result, { isBuild: false });
+          xpEarned += store.recordAufgabe(teil.id, lektion.id, aufgabenIndex, result, { isBuild: false });
           advance();
         },
       });
     } else {
-      const linked = aufgabe.q.includes("🔗");
       activeBuilder = mountBuilder(cardEl, ctx, {
-        prompt: `${linked ? "" : ""}${aufgabe.q}`,
+        prompt: aufgabe.q,
         starter: aufgabe.starter,
         check: aufgabe.check,
         hints: aufgabe.hints,
         loesung: aufgabe.loesung,
         ex: aufgabe.ex,
         xp: XP_BUILD,
+        onWrongAttempt: () => {
+          store.recordAufgabe(teil.id, lektion.id, aufgabenIndex, "wrong", { isBuild: true });
+        },
         onDone: (result) => {
           results[aufgabenIndex] = result;
-          store.recordAufgabe(teil.id, lektion.id, aufgabenIndex, result, { isBuild: true });
+          xpEarned += store.recordAufgabe(teil.id, lektion.id, aufgabenIndex, result, { isBuild: true });
           setTimeout(advance, 900);
         },
       });
@@ -207,13 +211,10 @@ export function renderLesson(view, ctx, teilId, lektionId) {
 
   function renderLernlog() {
     phase = "lernlog";
-    store.completeLektion(teil.id, lektion.id);
+    xpEarned += store.completeLektion(teil.id, lektion.id);
     const correct = results.filter((r) => r === "correct").length;
     const wrong = results.filter((r) => r === "wrong" || r === "solved-no-xp").length;
-    const xpGained =
-      results.filter((r, i) => r === "correct" && lektion.aufgaben[i].t !== "build").length * XP_QUIZ +
-      results.filter((r, i) => r === "correct" && lektion.aufgaben[i].t === "build").length * XP_BUILD +
-      50;
+    const xpGained = xpEarned;
 
     renderShell(`
       <div class="slide-card" style="--accent:${lektion.farbe}">
@@ -254,8 +255,4 @@ export function renderLesson(view, ctx, teilId, lektionId) {
       disposeSlideTerm();
     },
   };
-}
-
-function escapeHtml(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

@@ -116,23 +116,39 @@ class Store {
     return this._lektion(teilId, lektionId).aufgaben[idx] || null;
   }
 
-  /** result: 'correct' | 'wrong' | 'solved-no-xp' */
+  /**
+   * result: 'correct' | 'wrong' | 'solved-no-xp'
+   * Returns the XP actually awarded (0 if this attempt didn't earn any), so callers
+   * can show an accurate total instead of assuming every "correct" pays out.
+   */
   recordAufgabe(teilId, lektionId, idx, result, { isBuild = false } = {}) {
     const lek = this._lektion(teilId, lektionId);
     const prev = lek.aufgaben[idx];
+    const wasAlreadyCorrect = prev?.status === "correct";
     const attempts = (prev?.attempts || 0) + (result === "wrong" ? 1 : 0);
     lek.aufgaben[idx] = { status: result, attempts };
 
     const key = `${teilId}:${lektionId}:${idx}`;
     const w = this.state.revision.weights;
     const streaks = this.state.revision.streaks;
+    let xpAwarded = 0;
     if (result === "correct") {
       this.state.revision.correct += 1;
       streaks[key] = (streaks[key] || 0) + 1;
-      // stays at up-to-4x weight until answered correctly twice in a row
-      w[key] = streaks[key] >= 2 ? 0 : Math.max((w[key] || 0) - 1, 1);
+      // Only decay a weight that already exists (i.e. this task was missed before).
+      // A task answered correctly on the very first try was never weak, so it must
+      // not gain a weight here — otherwise every task ever answered would count as
+      // "schwach" until re-answered correctly twice in a row.
+      if (w[key]) w[key] = streaks[key] >= 2 ? 0 : Math.max(w[key] - 1, 1);
       if (streaks[key] >= 2) streaks[key] = 0;
-      this.addXP(isBuild ? XP_BUILD : XP_QUIZ);
+      // Replaying a lesson (via "Wiederholen") must not farm XP a second time.
+      if (!wasAlreadyCorrect) {
+        xpAwarded = isBuild ? XP_BUILD : XP_QUIZ;
+        this.addXP(xpAwarded);
+      } else {
+        this._emit();
+        this._scheduleSave();
+      }
     } else if (result === "wrong") {
       this.state.revision.wrong += 1;
       streaks[key] = 0;
@@ -146,17 +162,20 @@ class Store {
       this._emit();
       this._scheduleSave();
     }
+    return xpAwarded;
   }
 
+  /** Returns the XP actually awarded (0 if the lesson was already completed before). */
   completeLektion(teilId, lektionId) {
     const lek = this._lektion(teilId, lektionId);
     if (!lek.completed) {
       lek.completed = true;
       this.addXP(XP_LESSON_BONUS);
-    } else {
-      this._emit();
-      this._scheduleSave();
+      return XP_LESSON_BONUS;
     }
+    this._emit();
+    this._scheduleSave();
+    return 0;
   }
 
   isLektionCompleted(teilId, lektionId) {

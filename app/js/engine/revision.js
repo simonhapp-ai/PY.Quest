@@ -109,10 +109,23 @@ export function renderRevision(view, ctx) {
             .map((_, ri) => `<div class="seg ${ri < i ? "done" : ri === i ? "current" : ""}"></div>`)
             .join("")}</div>
           <div class="task-card" id="rev-card" style="--accent:${entry.lek.farbe}"></div>
+          ${
+            isBuild
+              ? `<div style="display:flex; justify-content:flex-end; margin-top:10px;">
+                   <button class="btn" id="btn-skip">Überspringen (zählt als falsch)</button>
+                 </div>`
+              : ""
+          }
         </div>`;
 
       const cardEl = view.querySelector("#rev-card");
       const key = `${entry.teil.id}:${entry.lek.id}:${entry.idx}`;
+
+      view.querySelector("#btn-skip")?.addEventListener("click", () => {
+        roundResults.push("wrong");
+        store.recordAufgabe(entry.teil.id, entry.lek.id, entry.idx, "wrong", { isBuild: true });
+        nextQuestion();
+      });
 
       if (!isBuild) {
         renderQuizTask(cardEl, entry.aufgabe, {
@@ -131,6 +144,9 @@ export function renderRevision(view, ctx) {
           loesung: entry.aufgabe.loesung,
           ex: entry.aufgabe.ex,
           xp: XP_BUILD,
+          onWrongAttempt: () => {
+            store.recordAufgabe(entry.teil.id, entry.lek.id, entry.idx, "wrong", { isBuild: true });
+          },
           onDone: (result) => {
             roundResults.push(result);
             store.recordAufgabe(entry.teil.id, entry.lek.id, entry.idx, result, { isBuild: true });

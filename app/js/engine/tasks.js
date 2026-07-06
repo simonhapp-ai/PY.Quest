@@ -1,6 +1,8 @@
 // Renders the quiz task types: mc (multiple choice), out (predict output), fill (fill blank).
 // Content-agnostic: everything it needs comes from the `aufgabe` object per the schema.
 
+import { escapeHtml } from "../util.js";
+
 function normalize(s) {
   return String(s).trim().toLowerCase().replace(/\s+/g, " ").replace(/'/g, '"');
 }
@@ -24,18 +26,24 @@ export function renderQuizTask(container, aufgabe, { onDone }) {
   let answered = false;
   let result = null;
 
-  function showFeedback(ok) {
+  function showFeedback(ok, explanation) {
     feedbackEl.classList.add("show", ok ? "ok" : "err");
-    feedbackEl.textContent = (ok ? "✔ Richtig. " : "✘ Nicht ganz. ") + (aufgabe.ex || "");
+    feedbackEl.textContent = (ok ? "✔ Richtig. " : "✘ Nicht ganz. ") + (explanation ?? aufgabe.ex ?? "");
     nextBtn.disabled = false;
     answered = true;
     result = ok ? "correct" : "wrong";
   }
 
   if (aufgabe.t === "mc") {
+    // An option is either a plain string, or { text, ex } to give that specific wrong
+    // choice its own explanation (addressing that exact misconception instead of the
+    // task's generic one).
+    const optText = (opt) => (opt && typeof opt === "object" ? opt.text : opt);
     answerArea.innerHTML = `
       <div class="opt-list">
-        ${aufgabe.opts.map((opt, i) => `<button class="opt-btn" data-i="${i}">${opt}</button>`).join("")}
+        ${aufgabe.opts
+          .map((opt, i) => `<button class="opt-btn" data-i="${i}">${escapeHtml(optText(opt))}</button>`)
+          .join("")}
       </div>`;
     answerArea.querySelectorAll(".opt-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -47,7 +55,9 @@ export function renderQuizTask(container, aufgabe, { onDone }) {
           if (bi === aufgabe.a) b.classList.add("correct");
           else if (bi === i) b.classList.add("wrong");
         });
-        showFeedback(ok);
+        const chosen = aufgabe.opts[i];
+        const chosenEx = !ok && chosen && typeof chosen === "object" ? chosen.ex : undefined;
+        showFeedback(ok, chosenEx);
       });
     });
   } else {
@@ -75,11 +85,4 @@ export function renderQuizTask(container, aufgabe, { onDone }) {
   }
 
   nextBtn.addEventListener("click", () => onDone(result));
-}
-
-function escapeHtml(s) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }

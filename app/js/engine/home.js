@@ -1,4 +1,5 @@
 import { isTeilUnlocked } from "../registry.js";
+import { bindActivate } from "../util.js";
 
 function ringSvg(fraction, color) {
   const r = 18;
@@ -27,7 +28,8 @@ export function renderHome(view, ctx) {
         : `<span class="status-badge locked-badge">🔒 ${teil.voraussetzung}</span>`;
 
       return `
-        <div class="teil-card ${unlocked ? "" : "locked"}" data-teil="${teil.id}" style="--accent:${teil.farbe}">
+        <div class="teil-card ${unlocked ? "" : "locked"}" data-teil="${teil.id}" style="--accent:${teil.farbe}"
+          tabindex="0" role="button" aria-disabled="${unlocked ? "false" : "true"}">
           <div class="num">TEIL ${teil.nummer}</div>
           <h2>${teil.titel}</h2>
           <p class="untertitel">${teil.untertitel}</p>
@@ -51,13 +53,18 @@ export function renderHome(view, ctx) {
 
   view.innerHTML = `
     <div class="view-narrow">
-      <h1 class="headline" style="margin-bottom:6px;">Lernpfade</h1>
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:6px;">
+        <h1 class="headline" style="margin-bottom:0;">Lernpfade</h1>
+        <button class="btn" id="btn-revision">📖 Revision — teilübergreifend</button>
+      </div>
       <p style="color:var(--dim); margin-top:0; margin-bottom:24px;">Wähle einen Teil, um weiterzulernen.</p>
       <div class="teil-grid">${cards}${comingSoon}</div>
     </div>`;
 
+  view.querySelector("#btn-revision").addEventListener("click", () => navigate("#/revision"));
+
   view.querySelectorAll(".teil-card[data-teil]").forEach((card) => {
-    card.addEventListener("click", () => {
+    bindActivate(card, () => {
       const teilId = card.dataset.teil;
       const teil = registry.find((t) => t.id === teilId);
       if (!isTeilUnlocked(teil, store)) return;

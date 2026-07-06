@@ -1,4 +1,5 @@
 import { isLektionUnlocked } from "../registry.js";
+import { bindActivate } from "../util.js";
 
 export function renderPath(view, ctx, teilId) {
   const { registry, store, navigate } = ctx;
@@ -15,7 +16,8 @@ export function renderPath(view, ctx, teilId) {
       const isActive = unlocked && !done;
       const state = done ? "done" : isActive ? "active" : "locked";
       return `
-        <div class="node-row ${state}" data-lektion="${lek.id}" style="--node-color:${lek.farbe}">
+        <div class="node-row ${state}" data-lektion="${lek.id}" style="--node-color:${lek.farbe}"
+          tabindex="0" role="button" aria-disabled="${unlocked ? "false" : "true"}">
           <div class="node-dot">${done ? "✔" : unlocked ? lek.icon : "🔒"}</div>
           <div class="node-info">
             <h3>${i + 1}. ${lek.titel}</h3>
@@ -56,7 +58,7 @@ export function renderPath(view, ctx, teilId) {
   });
 
   view.querySelectorAll(".node-row").forEach((row) => {
-    row.addEventListener("click", () => {
+    bindActivate(row, () => {
       const lek = teil.lektionen.find((l) => l.id === row.dataset.lektion);
       if (!isLektionUnlocked(teil, lek, store)) return;
       navigate(`#/lesson/${teil.id}/${lek.id}`);

@@ -1,11 +1,8 @@
 import { TermView } from "../python/terminal.js";
 import { evaluateCheck } from "../python/checker.js";
+import { escapeHtml } from "../util.js";
 
 const SOFT_WARNING_MS = 10000;
-
-function escapeHtml(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
 
 /**
  * Mounts the editor+terminal split view used by both "build" lesson tasks and
@@ -30,10 +27,10 @@ export function mountBuilder(container, ctx, spec) {
           spec.starter || ""
         )}</textarea>
         <div class="editor-toolbar">
-          <button class="btn btn-primary" id="btn-run">▶ Ausführen</button>
+          <button class="btn" id="btn-run" title="⌘↵">▶ Ausführen</button>
           <button class="btn" id="btn-reset">↺ Reset</button>
           <button class="btn" id="btn-hint">💡 Hinweis</button>
-          <button class="btn btn-primary" id="btn-submit">✓ Abgeben</button>
+          <button class="btn btn-primary" id="btn-submit" title="⌘⇧↵">✓ Abgeben</button>
         </div>
       </div>
       <div class="builder-pane">
@@ -67,6 +64,29 @@ export function mountBuilder(container, ctx, spec) {
       const end = editor.selectionEnd;
       editor.value = editor.value.slice(0, start) + "    " + editor.value.slice(end);
       editor.selectionStart = editor.selectionEnd = start + 4;
+      return;
+    }
+    if (e.metaKey && e.key === "Enter") {
+      e.preventDefault();
+      if (e.shiftKey) submitBtn.click();
+      else runBtn.click();
+      return;
+    }
+    if (e.key === "Enter") {
+      // Auto-indent: continue the current line's indentation, plus one more level
+      // after a line ending in ':' — indentation is the classic Python beginner hurdle.
+      e.preventDefault();
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const before = editor.value.slice(0, start);
+      const after = editor.value.slice(end);
+      const lineStart = before.lastIndexOf("\n") + 1;
+      const currentLine = before.slice(lineStart);
+      let indent = (currentLine.match(/^[ \t]*/) || [""])[0];
+      if (/:\s*$/.test(currentLine.trim())) indent += "    ";
+      const insertion = "\n" + indent;
+      editor.value = before + insertion + after;
+      editor.selectionStart = editor.selectionEnd = start + insertion.length;
     }
   });
 
@@ -99,7 +119,11 @@ export function mountBuilder(container, ctx, spec) {
   });
 
   resetBtn.addEventListener("click", () => {
-    editor.value = spec.starter || "";
+    const starter = spec.starter || "";
+    if (editor.value !== starter && !confirm("Editor wirklich zurücksetzen? Deine Eingabe geht verloren.")) {
+      return;
+    }
+    editor.value = starter;
     term.clear();
   });
 
@@ -122,6 +146,10 @@ export function mountBuilder(container, ctx, spec) {
         feedbackEl.classList.add("show", "err");
         feedbackEl.textContent =
           "Musterlösung eingesetzt — diese Aufgabe zählt als gelöst, aber ohne XP.";
+        runBtn.disabled = true;
+        submitBtn.disabled = true;
+        hintBtn.disabled = true;
+        resetBtn.disabled = true;
         spec.onDone("solved-no-xp");
       });
     }
@@ -147,8 +175,17 @@ export function mountBuilder(container, ctx, spec) {
     if (verdict.passed) {
       feedbackEl.classList.add("show", "ok");
       feedbackEl.textContent = `✔ ${spec.ex || "Gelöst!"} (+${spec.xp} XP)`;
+      // Lock the toolbar: the caller advances to the next task ~900ms later, and a
+      // second click in that window would otherwise re-fire onDone (double XP/advance).
+      runBtn.disabled = true;
+      submitBtn.disabled = true;
+      hintBtn.disabled = true;
+      resetBtn.disabled = true;
       spec.onDone("correct");
     } else {
+      // Only the first failed submit feeds the revision system — otherwise a task
+      // someone struggles with for 5 attempts would count 5x as "wrong".
+      if (wrongAttempts === 0) spec.onWrongAttempt?.();
       wrongAttempts++;
       feedbackEl.classList.add("show", "err");
       feedbackEl.textContent = `✘ ${verdict.detail}`;

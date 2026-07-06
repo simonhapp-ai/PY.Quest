@@ -32,9 +32,10 @@ pyquest/
 │   │                       # → content-agnostisch, rendert nur was das Schema liefert
 │   └── js/python/         # runtime.js (Pyodide+xterm+stdin), checker.js (Output-Diff)
 ├── app/content/teil1.js, teil2.js   # Content-Plugins nach festem Schema
-├── app/vendor/             # pyodide/, xterm/, codemirror/ — beim Build kopiert, nie CDN
+├── app/vendor/             # pyodide/, xterm/ — beim Build kopiert, nie CDN
+│                           #   (Editor ist bewusst ein <textarea>, kein CodeMirror — siehe MASTERPROMPT Abschnitt Editor)
 ├── assets/fonts/           # Syne + IBM Plex Mono als WOFF2 (lokal)
-└── scripts/copy-vendor.js  # kopiert node_modules-Assets → app/vendor/
+└── scripts/copy-vendor.cjs # kopiert node_modules-Assets → app/vendor/
 ```
 
 Sicherheit: `contextIsolation: true`, `nodeIntegration: false`.
@@ -49,7 +50,7 @@ Persistenz-Schlüssel: `teilId → lektionId → aufgabenIndex` (Content-Updates
 - `npm start` — Electron App im Dev-Modus starten
 - `npm run build` — Vite-Build des Renderers
 - `npm run dist` — `.dmg` bauen (universal, macOS)
-- `node scripts/verify-content.js` — prüft alle `build`/`werkstatt`-`loesung`en gegen ihre `check`s
+- `node scripts/verify-content.mjs` — prüft alle `build`/`werkstatt`-`loesung`en gegen ihre `check`s
 
 ## Releases & Auto-Update
 Kein Apple Developer ID vorhanden → kein Squirrel.Mac. Stattdessen ein selbstgebauter

@@ -1,5 +1,6 @@
 import { mountBuilder } from "./builder.js";
 import { XP_WERKSTATT } from "../state.js";
+import { bindActivate } from "../util.js";
 
 function briefToHtml(brief) {
   // brief is a short ticket description; sentences after the first become bullet points.
@@ -31,7 +32,8 @@ export function renderWerkstatt(view, ctx, teilId, projektId) {
       .map((p) => {
         const done = store.isWerkstattDone(teil.id, p.id);
         return `
-          <div class="werkstatt-card ${done ? "done" : ""}" data-projekt="${p.id}" style="--accent:${p.farbe}">
+          <div class="werkstatt-card ${done ? "done" : ""}" data-projekt="${p.id}" style="--accent:${p.farbe}"
+            tabindex="0" role="button">
             <div style="font-size:11px; color:var(--dim);">SCHWIERIGKEIT ${"★".repeat(p.schwierigkeit)}${"☆".repeat(
           3 - p.schwierigkeit
         )}</div>
@@ -52,7 +54,7 @@ export function renderWerkstatt(view, ctx, teilId, projektId) {
 
     view.querySelectorAll("[data-nav]").forEach((a) => a.addEventListener("click", () => navigate(a.dataset.nav)));
     view.querySelectorAll(".werkstatt-card").forEach((card) => {
-      card.addEventListener("click", () => navigate(`#/werkstatt/${teil.id}/${card.dataset.projekt}`));
+      bindActivate(card, () => navigate(`#/werkstatt/${teil.id}/${card.dataset.projekt}`));
     });
 
     return {};

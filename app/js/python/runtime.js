@@ -106,34 +106,69 @@ class PyodideRuntime {
     this.worker?.terminate();
     this.ready = false;
     this.readyPromise = null;
-    this._active = null;
+    // A run that was in flight never gets its run-done/check-done message now that
+    // the worker is gone — resolve it here so the caller's await doesn't hang forever.
+    if (this._active) {
+      const stopped = this._active;
+      this._active = null;
+      if (stopped.kind === "check") {
+        stopped.resolve?.({ stdout: "", userError: "Ausführung wurde gestoppt.", testError: null });
+      } else {
+        stopped.resolve?.({ ok: false, error: "Ausführung wurde gestoppt." });
+      }
+    }
     await this.init();
   }
 
+  /** True while a run/check/repl call is in flight and holding the single `_active` slot. */
+  isBusy() {
+    return this._active !== null;
+  }
+
   runInteractive(code, { onStdout, onStderr, onStdinRequest } = {}) {
+    if (this._active) {
+      return Promise.resolve({
+        ok: false,
+        error: "Python führt gerade etwas anderes aus. Bitte kurz warten.",
+      });
+    }
     return new Promise((resolve) => {
-      this._active = { onStdout, onStderr, onStdinRequest, resolve };
+      this._active = { kind: "run", onStdout, onStderr, onStdinRequest, resolve };
       this.worker.postMessage({ cmd: "run", code });
     });
   }
 
   runCheck(code, { tests = "", stdin = [], onStdout } = {}) {
+    if (this._active) {
+      return Promise.resolve({
+        stdout: "",
+        userError: "Python führt gerade etwas anderes aus. Bitte kurz warten.",
+        testError: null,
+      });
+    }
     return new Promise((resolve) => {
-      this._active = { onStdout, resolve };
+      this._active = { kind: "check", onStdout, resolve };
       this.worker.postMessage({ cmd: "check", code, tests, stdin });
     });
   }
 
   runRepl(code, { onStdout, onStderr, onStdinRequest } = {}) {
+    if (this._active) {
+      return Promise.resolve({
+        ok: false,
+        error: "Python führt gerade etwas anderes aus. Bitte kurz warten.",
+      });
+    }
     return new Promise((resolve) => {
-      this._active = { onStdout, onStderr, onStdinRequest, resolve };
+      this._active = { kind: "repl", onStdout, onStderr, onStdinRequest, resolve };
       this.worker.postMessage({ cmd: "repl", code });
     });
   }
 
   resetRepl() {
+    if (this._active) return Promise.resolve();
     return new Promise((resolve) => {
-      this._active = { resolve };
+      this._active = { kind: "repl-reset", resolve };
       this.worker.postMessage({ cmd: "repl-reset" });
     });
   }
