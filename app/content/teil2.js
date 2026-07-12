@@ -100,7 +100,7 @@ export default {
           q: "Prüfe mit 'in', ob 'autor' ein Schlüssel in 'buch' ist, und gib das Ergebnis aus.",
           starter: 'buch = {"titel": "Dune"}\n',
           check: { stdout: ["False"] },
-          hints: ["in prüft die Schlüssel, nicht die Werte.", 'print("autor" in buch)'],
+          hints: ["in prüft die Schlüssel, nicht die Werte.", "Nutze print(...) mit dem in-Ausdruck.", 'print("autor" in buch)'],
           loesung: 'buch = {"titel": "Dune"}\nprint("autor" in buch)',
           ex: "in ist der sichere Weg, Existenz zu prüfen, bevor man zugreift.",
         },

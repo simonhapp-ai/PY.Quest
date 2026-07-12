@@ -439,6 +439,7 @@ a { color: var(--cyan); }
   border-radius: 8px;
   font-size: clamp(13px, 0.4vw + 11px, 16px);
   line-height: 1.6;
+  white-space: pre-wrap;
   display: none;
 }
 .task-feedback.show { display: block; }

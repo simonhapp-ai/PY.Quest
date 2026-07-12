@@ -57,10 +57,38 @@ async function ensurePyodide() {
   return pyodide;
 }
 
+/**
+ * Drops Pyodide's own execution-harness frames (e.g. `_pyodide/_base.py`,
+ * `eval_code_async`) from a traceback. A real `python3 script.py` run never shows
+ * these — they're an artifact of how Pyodide evaluates the cell, not the user's code —
+ * so leaving them in makes a plain NameError look like an internal crash.
+ */
+function cleanTraceback(message) {
+  const lines = message.split("\n");
+  if (lines[0] !== "Traceback (most recent call last):") return message;
+
+  const kept = [lines[0]];
+  let skipping = false;
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    const frame = /^  File "([^"]*)"/.exec(line);
+    if (frame) {
+      skipping = frame[1].includes("/_pyodide/");
+      if (!skipping) kept.push(line);
+      continue;
+    }
+    if (!skipping) kept.push(line);
+  }
+  // Nothing but the header survived (error happened purely inside Pyodide's own
+  // harness, no user frame at all) — fall back to just the final exception line.
+  if (kept.length === 1) return lines[lines.length - 1];
+  return kept.join("\n");
+}
+
 function formatError(err) {
   if (err && err.message) {
     // PythonError.message already contains a full, real CPython traceback.
-    return String(err.message).trim();
+    return cleanTraceback(String(err.message).trim());
   }
   return String(err);
 }
